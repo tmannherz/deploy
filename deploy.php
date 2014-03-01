@@ -1,7 +1,8 @@
 <?php
-
 /**
  * Git project deployment script.
+ *
+ * @author Todd Mannherz <todd.mannherz@gmail.com>
  */
 
 echo "\n";
@@ -16,7 +17,7 @@ $wwwDir = '/var/www';
 $iterator = new DirectoryIterator($wwwDir);
 foreach ($iterator as $fileInfo) {
     if ($fileInfo->isDir()) {
-        if (is_dir($fileInfo->getRealPath() . '/builds') && is_dir($fileInfo->getRealPath() . '/shared')) {
+        if (is_dir($fileInfo->getRealPath() . '/builds') && is_dir($fileInfo->getRealPath() . '/repo')) {
            $projects[] = $fileInfo->getFilename();
         }
     }
@@ -48,6 +49,19 @@ if ($continue != 'y' && $continue != 'yes') {
     exit;
 }
 
-
-
+require_once 'include.php';
+use Deploy\Manager;
+$manager = new Manager(
+    $wwwDir . DIRECTORY_SEPARATOR . $project,
+    $wwwDir . DIRECTORY_SEPARATOR . 'deploy' . DIRECTORY_SEPARATOR . 'projects'
+);
+$result = $manager->deployProject();
+$steps = $manager->getSteps();
+echo implode("\n", $steps);
+if ($result) {
+    echo "\nProject successfully deployed.";
+}
+else {
+    echo "\nDeployment failed.";
+}
 echo "\n";
