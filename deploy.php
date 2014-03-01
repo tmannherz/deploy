@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * Git project deployment script.
+ */
+
+echo "\n";
+echo "#############################\n";
+echo "##                         ##\n";
+echo "##  GIT DEPLOYMENT SCRIPT  ##\n";
+echo "##                         ##\n";
+echo "#############################\n\n";
+
+$projects = array();
+$wwwDir = '/var/www';
+$iterator = new DirectoryIterator($wwwDir);
+foreach ($iterator as $fileInfo) {
+    if ($fileInfo->isDir()) {
+        if (is_dir($fileInfo->getRealPath() . '/builds') && is_dir($fileInfo->getRealPath() . '/shared')) {
+           $projects[] = $fileInfo->getFilename();
+        }
+    }
+}
+if (count($projects) == 1) {
+    $project = $projects[0];
+}
+else if (count($projects)) {
+    foreach ($projects as $index => $project) {
+        echo ($index + 1) . ') ' . $project . "\n";
+    }
+    echo "\n";
+    do {
+        echo "Select the project to deploy: ";
+        $choice = (int)trim(fgets(STDIN));
+    } while (!isset($projects[$choice - 1]));
+    $project = $projects[$choice - 1];
+    echo "\n";
+}
+else {
+    echo "No projects suitable for deployment.\n";
+    exit;
+}
+
+echo 'About to deploy ' . $project . ".\nDo you wish to continue? (y/n): ";
+$continue = strtolower(trim(fgets(STDIN)));
+if ($continue != 'y' && $continue != 'yes') {
+    echo "Aborting...\n";
+    exit;
+}
+
+
+
+echo "\n";
