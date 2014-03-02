@@ -6,6 +6,7 @@
  * @author Todd Mannherz <todd.mannherz@gmail.com>
  */
 namespace Deploy;
+use Exception;
 
 /**
  * Deployment management model
@@ -30,6 +31,16 @@ class Manager
      * @var Project
      */
     protected $project;
+
+    /**
+     * Allowed custom project type defaults.
+     *
+     * @var string
+     */
+    protected $allowedTypes = array(
+        'zend' => 'Deploy\ZendFrameworkProject',
+        'magento' => 'Deploy\MagentoProject'
+    );
     
     /**
      * @param string $projectPath
@@ -41,15 +52,19 @@ class Manager
         $this->name = pathinfo($projectPath, PATHINFO_BASENAME);
         
         $customProj = null;
-        $custom = $configDir . DIRECTORY_SEPARATOR . $this->name . '.php';
-        if (file_exists($custom)) {
-            include $custom;
-            $className = ucfirst(strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $this->name)));  // MyApp.com -> Myappcom
-            if (class_exists($className)) {
-                $customProj = new $className();
+        $customClass = ucfirst(strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $this->name)));  // MyApp.com -> Myappcom
+        $customFile = $configDir . DIRECTORY_SEPARATOR . $customClass . '.php';
+        if (file_exists($customFile)) {
+            include $customFile;
+            if (class_exists($customClass)) {
+                $customProj = new $customClass();
                 if (!($customProj instanceof CustomProject)) {
                     $customProj = null;
                 }
+            }
+            else if (defined('DEPLOY_PROJECT_TYPE') && array_key_exists(DEPLOY_PROJECT_TYPE, $this->allowedTypes)) {
+                $customClass = $this->allowedTypes[DEPLOY_PROJECT_TYPE];
+                $customProj = new $customClass();
             }
         }
 
@@ -65,7 +80,7 @@ class Manager
     {
         try {
             return $this->project->deploy();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -207,7 +222,7 @@ class Project
             exec($command, $output, $response);
             if ($response !== 0) {
                 $this->steps[$index] .= 'Error';
-                throw new \Exception("Error executing command $index.");
+                throw new Exception("Error executing command $index.");
             }
             $this->steps[$index] .= 'Done';
         }
@@ -220,14 +235,14 @@ class Project
             }
             else {
                 $this->steps[] = $step . 'Error';
-                throw new \Exception('Error running custom commands.');
+                throw new Exception('Error running custom commands.');
             }
         }
 
         // point current to the build
         @unlink($this->current);
         if (!@symlink($this->build, $this->current)) {
-            throw new \Exception('Error linking to the current directory.');
+            throw new Exception('Error linking to the current directory.');
         }
         return true;
     }
@@ -277,4 +292,52 @@ interface CustomProject
      * @return bool
      */
     public function afterDeploy (Project $project);
+}
+
+/**
+ * Zend Framework Project
+ */
+class ZendFrameworkProject implements CustomProject
+{
+/**
+     * Run custom tasks after the project is deployed.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    public function afterDeploy (Project $project)
+    {
+        $res = true;
+        if (is_dir($project->getBuildPath() . '/tmp')) {
+            $res = @rmdir($project->getBuildPath() . '/tmp');
+        }
+        if ($res) {
+            $res = @symlink($project->getSharedPath() . '/tmp', $project->getBuildPath() . '/tmp');
+        }
+        return $res;
+    }
+}
+
+/**
+ * Magento Project
+ */
+class MagentoProject implements CustomProject
+{
+/**
+     * Run custom tasks after the project is deployed.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    public function afterDeploy (Project $project)
+    {
+        $res = @symlink($project->getSharedPath() . '/app/etc/local.xml', $project->getBuildPath() . '/app/etc/local.xml');
+        if ($res) {
+            $res = @symlink($project->getSharedPath() . '/media', $project->getBuildPath() . '/media');
+        }
+        if ($res) {
+            $res = @symlink($project->getSharedPath() . '/var', $project->getBuildPath() . '/var');
+        }
+        return $res;
+    }
 }
