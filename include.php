@@ -281,9 +281,9 @@ class Project
 }
 
 /**
- * Custom Project interface
+ * Custom Project class
  */
-interface CustomProject 
+abstract class CustomProject
 {
     /**
      * Run custom tasks after the project is deployed.
@@ -291,13 +291,35 @@ interface CustomProject
      * @param Project $project
      * @return bool
      */
-    public function afterDeploy (Project $project);
+    public abstract function afterDeploy (Project $project);
+
+    /**
+     * Clear app cache.
+     *
+     * @param Project $project
+     * @return bool
+     */
+    protected function clearCache (Project $project)
+    {
+        try {
+            if (extension_loaded('apc') && ini_get('apc.enabled')) {
+                apc_clear_cache('opcode');
+                apc_clear_cache('user');
+            }
+            if (function_exists('opcache_reset') && ini_get('opcache.enable')) {
+                opcache_reset();
+            }
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
 }
 
 /**
  * Zend Framework Project
  */
-class ZendFrameworkProject implements CustomProject
+class ZendFrameworkProject extends CustomProject
 {
 /**
      * Run custom tasks after the project is deployed.
@@ -314,16 +336,19 @@ class ZendFrameworkProject implements CustomProject
         if ($res) {
             $res = @symlink($project->getSharedPath() . '/tmp', $project->getBuildPath() . '/tmp');
         }
+        if ($res) {
+            return $this->clearCache($project);
+        }
         return $res;
-    }
+    }   
 }
 
 /**
  * Magento Project
  */
-class MagentoProject implements CustomProject
+class MagentoProject extends CustomProject
 {
-/**
+    /**
      * Run custom tasks after the project is deployed.
      *
      * @param Project $project
@@ -338,6 +363,53 @@ class MagentoProject implements CustomProject
         if ($res) {
             $res = @symlink($project->getSharedPath() . '/var', $project->getBuildPath() . '/var');
         }
+        if ($res) {
+            return $this->clearCache($project);
+        }
         return $res;
+    }
+    
+    /**
+     * Clear app cache.
+     * 
+     * @param Project $project
+     * @return bool
+     */
+    protected function clearCache (Project $project)
+    {
+        try {
+            require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
+            
+            if (!Mage::isInstalled()) {
+                return true;
+            }
+            // Only for urls
+            // Don't remove this
+            $_SERVER['SCRIPT_NAME'] = '/';
+            $_SERVER['SCRIPT_FILENAME'] = '/';
+
+            Mage::app('admin')->setUseSessionInUrl(false);
+
+            umask(0);
+            
+            Mage::app()->cleanCache();
+            Mage::app()->getCache()->getBackend()->clean();
+            if (class_exists('Enterprise_PageCache_Model_Cache')) {
+                Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
+            }
+
+            parent::clearCache($project);
+
+            /**
+             * Run db updates
+             */
+            Mage::getConfig()->reinit();
+            Mage_Core_Model_Resource_Setup::applyAllUpdates();
+            Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
+            
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 }
