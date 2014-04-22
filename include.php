@@ -197,7 +197,7 @@ class Project
         // reset the repo to the HEAD
         $this->steps[] = 'Resetting repository...';
         $commands[] = sprintf(
-            'git --git-dir="%1$s/.git" --work-tree="%1$s" reset --hard',
+            'git --git-dir="%1$s/.git" --work-tree="%1$s" reset --hard FETCH_HEAD',
             $this->repo
         );
 
