@@ -78,14 +78,14 @@ class Manager
     /**
      * Deploy the project.
      *
-     * @return bool
+     * @return bool|string
      */
     public function deployProject ()
     {
         try {
             return $this->project->deploy();
         } catch (Exception $e) {
-            return false;
+            return $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     }
 

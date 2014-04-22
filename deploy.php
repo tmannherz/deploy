@@ -58,7 +58,11 @@ $manager = new Manager(
 $result = $manager->deployProject();
 $steps = $manager->getSteps();
 echo implode("\n", $steps);
-if ($result) {
+if (is_string($result)) {
+    echo "\nDeployment failed.\n";
+    echo $result;
+}
+else if ($result === true) {
     echo "\nProject successfully deployed.";
 }
 else {
