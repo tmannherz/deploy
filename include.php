@@ -234,12 +234,16 @@ class Project
         // project-specific
         if ($this->customProject) {
             $step = 'Running Project-specific commands...';
-            if ($this->customProject->afterDeploy($this)) {
-                $this->steps[] = $step . 'Done';
-            }
-            else {
+            try {
+                if ($this->customProject->afterDeploy($this)) {
+                    $this->steps[] = $step . 'Done';
+                }
+                else {
+                    $this->steps[] = $step . 'Error';
+                }
+            } catch (Exception $e) {
                 $this->steps[] = $step . 'Error';
-                throw new Exception('Error running custom commands.');
+                throw $e;
             }
         }
 
@@ -381,39 +385,35 @@ class MagentoProject extends CustomProject
      */
     protected function clearCache (Project $project)
     {
-        try {
-            require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
-            
-            if (!\Mage::isInstalled()) {
-                return true;
-            }
-            // Only for urls
-            // Don't remove this
-            $_SERVER['SCRIPT_NAME'] = '/';
-            $_SERVER['SCRIPT_FILENAME'] = '/';
+        require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
 
-            \Mage::app('admin')->setUseSessionInUrl(false);
-
-            umask(0);
-            
-            \Mage::app()->cleanCache();
-            \Mage::app()->getCache()->getBackend()->clean();
-            if (class_exists('\\Enterprise_PageCache_Model_Cache')) {
-                \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
-            }
-
-            parent::clearCache($project);
-
-            /**
-             * Run db updates
-             */
-            \Mage::getConfig()->reinit();
-            \Mage_Core_Model_Resource_Setup::applyAllUpdates();
-            \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
-            
+        if (!\Mage::isInstalled()) {
             return true;
-        } catch (Exception $e) {
-            return false;
         }
+        // Only for urls
+        // Don't remove this
+        $_SERVER['SCRIPT_NAME'] = '/';
+        $_SERVER['SCRIPT_FILENAME'] = '/';
+
+        \Mage::app('admin')->setUseSessionInUrl(false);
+
+        umask(0);
+
+        \Mage::app()->cleanCache();
+        \Mage::app()->getCache()->getBackend()->clean();
+        if (class_exists('\\Enterprise_PageCache_Model_Cache')) {
+            \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
+        }
+
+        parent::clearCache($project);
+
+        /**
+         * Run db updates
+         */
+        \Mage::getConfig()->reinit();
+        \Mage_Core_Model_Resource_Setup::applyAllUpdates();
+        \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
+
+        return true;
     }
 }
