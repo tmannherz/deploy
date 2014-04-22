@@ -67,8 +67,12 @@ class Manager
                 $customProj = new $customClass();
             }
         }
+        $branch = null;
+        if (defined('DEPLOY_BRANCH')) {
+            $branch = DEPLOY_BRANCH;
+        }
 
-        $this->project = new Project($this->path, $customProj);
+        $this->project = new Project($this->path, $customProj, $branch);
     }
 
     /**
@@ -380,7 +384,7 @@ class MagentoProject extends CustomProject
         try {
             require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
             
-            if (!Mage::isInstalled()) {
+            if (!\Mage::isInstalled()) {
                 return true;
             }
             // Only for urls
@@ -388,14 +392,14 @@ class MagentoProject extends CustomProject
             $_SERVER['SCRIPT_NAME'] = '/';
             $_SERVER['SCRIPT_FILENAME'] = '/';
 
-            Mage::app('admin')->setUseSessionInUrl(false);
+            \Mage::app('admin')->setUseSessionInUrl(false);
 
             umask(0);
             
-            Mage::app()->cleanCache();
-            Mage::app()->getCache()->getBackend()->clean();
-            if (class_exists('Enterprise_PageCache_Model_Cache')) {
-                Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
+            \Mage::app()->cleanCache();
+            \Mage::app()->getCache()->getBackend()->clean();
+            if (class_exists('\\Enterprise_PageCache_Model_Cache')) {
+                \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
             }
 
             parent::clearCache($project);
@@ -403,9 +407,9 @@ class MagentoProject extends CustomProject
             /**
              * Run db updates
              */
-            Mage::getConfig()->reinit();
-            Mage_Core_Model_Resource_Setup::applyAllUpdates();
-            Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
+            \Mage::getConfig()->reinit();
+            \Mage_Core_Model_Resource_Setup::applyAllUpdates();
+            \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
             
             return true;
         } catch (Exception $e) {
