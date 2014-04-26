@@ -401,7 +401,7 @@ class MagentoProject extends CustomProject
 
         \Mage::app()->cleanCache();
         \Mage::app()->getCache()->getBackend()->clean();
-        if (class_exists('\\Enterprise_PageCache_Model_Cache')) {
+        if (@class_exists('\\Enterprise_PageCache_Model_Cache')) {
             \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
         }
 
