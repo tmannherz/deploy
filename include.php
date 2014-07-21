@@ -71,8 +71,13 @@ class Manager
         if (defined('DEPLOY_BRANCH')) {
             $branch = DEPLOY_BRANCH;
         }
+        $env = null;
+        if (defined('DEPLOY_PROJECT_ENV')) {
+            $env = DEPLOY_PROJECT_ENV;
+        }
 
-        $this->project = new Project($this->path, $customProj, $branch);
+
+        $this->project = new Project($this->path, $customProj, $branch, $env);
     }
 
     /**
@@ -165,11 +170,19 @@ class Project
     protected $branch = 'master';
 
     /**
+     * Environment
+     *
+     * @var string
+     */
+    protected $env = null;
+
+    /**
      * @param string $projectPath
      * @param \Deploy\CustomProject $customProject
      * @param string $branch
+     * @param string $env
      */
-    public function __construct ($projectPath, CustomProject $customProject = null, $branch = null)
+    public function __construct ($projectPath, CustomProject $customProject = null, $branch = null, $env = null)
     {
         $ds = DIRECTORY_SEPARATOR;
         $this->path = $projectPath;
@@ -180,6 +193,7 @@ class Project
         if ($branch) {
             $this->branch = $branch;
         }
+        $this->env = $env;
         $this->customProject = $customProject;
     }
     /**
@@ -311,6 +325,7 @@ abstract class CustomProject
     {
         try {
             if (extension_loaded('apc') && ini_get('apc.enabled')) {
+                apc_clear_cache();
                 apc_clear_cache('opcode');
                 apc_clear_cache('user');
             }
@@ -370,6 +385,20 @@ class MagentoProject extends CustomProject
         }
         if ($res) {
             $res = @symlink($project->getSharedPath() . '/var', $project->getBuildPath() . '/var');
+        }
+
+        // Environment-specific files
+        if ($this->env) {
+            $files = array(
+                '/errors/local.xml',
+                '/newrelic.php',
+                '/robots.txt'
+            );
+            foreach ($files as $file) {
+                if ($res && file_exists($project->getBuildPath() . $file . '.' . $this->env)) {
+                    $res = @rename($project->getBuildPath() . $file . '.' . $this->env, $project->getBuildPath() . $file);
+                }
+            }
         }
         if ($res) {
             return $this->clearCache($project);
