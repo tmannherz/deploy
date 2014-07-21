@@ -174,7 +174,7 @@ class Project
      *
      * @var string
      */
-    protected $env = null;
+    public $env = null;
 
     /**
      * @param string $projectPath
@@ -388,15 +388,15 @@ class MagentoProject extends CustomProject
         }
 
         // Environment-specific files
-        if ($this->env) {
+        if ($project->env) {
             $files = array(
                 '/errors/local.xml',
                 '/newrelic.php',
                 '/robots.txt'
             );
             foreach ($files as $file) {
-                if ($res && file_exists($project->getBuildPath() . $file . '.' . $this->env)) {
-                    $res = @rename($project->getBuildPath() . $file . '.' . $this->env, $project->getBuildPath() . $file);
+                if ($res && file_exists($project->getBuildPath() . $file . '.' . $project->env)) {
+                    $res = @rename($project->getBuildPath() . $file . '.' . $project->env, $project->getBuildPath() . $file);
                 }
             }
         }
