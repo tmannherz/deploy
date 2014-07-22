@@ -414,6 +414,11 @@ class MagentoProject extends CustomProject
      */
     protected function clearCache (Project $project)
     {
+        if (file_exists($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled')) {
+            @rename($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
+        }
+        parent::clearCache($project);
+
         require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
 
         if (!\Mage::isInstalled()) {
@@ -434,14 +439,16 @@ class MagentoProject extends CustomProject
             \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
         }
 
-        parent::clearCache($project);
-
         /**
          * Run db updates
          */
         \Mage::getConfig()->reinit();
         \Mage_Core_Model_Resource_Setup::applyAllUpdates();
         \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
+
+        if (file_exists($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag')) {
+            @rename($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag', $project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled');
+        }
 
         return true;
     }
