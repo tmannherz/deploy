@@ -42,7 +42,10 @@ else {
     exit;
 }
 
-echo 'About to deploy ' . $project . ".\nDo you wish to continue? (y/n): ";
+echo 'Specify branch to deploy ' . $project . ' (leave blank to use default): ';
+$branch = trim(fgets(STDIN));
+
+echo "\nAbout to deploy " . ($branch ? $branch : 'default') . ' branch for ' . $project . ".\nDo you wish to continue? (y/n): ";
 $continue = strtolower(trim(fgets(STDIN)));
 if ($continue != 'y' && $continue != 'yes') {
     echo "Aborting...\n";
@@ -53,7 +56,8 @@ require_once 'include.php';
 use Deploy\Manager;
 $manager = new Manager(
     $wwwDir . DIRECTORY_SEPARATOR . $project,
-    $wwwDir . DIRECTORY_SEPARATOR . 'deploy' . DIRECTORY_SEPARATOR . 'projects'
+    $wwwDir . DIRECTORY_SEPARATOR . 'deploy' . DIRECTORY_SEPARATOR . 'projects',
+    $branch
 );
 $result = $manager->deployProject();
 $steps = $manager->getSteps();

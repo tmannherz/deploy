@@ -45,8 +45,9 @@ class Manager
     /**
      * @param string $projectPath
      * @param string $configDir
+     * @param string $branch
      */
-    public function __construct ($projectPath, $configDir)
+    public function __construct ($projectPath, $configDir, $branch = '')
     {
         $this->path = $projectPath;
         $this->name = pathinfo($projectPath, PATHINFO_BASENAME);
@@ -67,15 +68,13 @@ class Manager
                 $customProj = new $customClass();
             }
         }
-        $branch = null;
-        if (defined('DEPLOY_BRANCH')) {
+        if (!$branch && defined('DEPLOY_BRANCH')) {
             $branch = DEPLOY_BRANCH;
         }
         $env = null;
         if (defined('DEPLOY_PROJECT_ENV')) {
             $env = DEPLOY_PROJECT_ENV;
         }
-
 
         $this->project = new Project($this->path, $customProj, $branch, $env);
     }
