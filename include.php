@@ -389,6 +389,7 @@ class MagentoProject extends CustomProject
         // Environment-specific files
         if ($project->env) {
             $files = array(
+                '/.htaccess',
                 '/errors/local.xml',
                 '/newrelic.php',
                 '/robots.txt'
