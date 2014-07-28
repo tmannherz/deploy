@@ -28,9 +28,9 @@ class Manager
     protected $name;
     
     /**
-     * @var Project
+     * @var Deployer
      */
-    protected $project;
+    protected $deployer;
 
     /**
      * Allowed custom project type defaults.
@@ -59,7 +59,7 @@ class Manager
             include $customFile;
             if (class_exists($customClass)) {
                 $customProj = new $customClass();
-                if (!($customProj instanceof CustomProject)) {
+                if (!($customProj instanceof Project)) {
                     $customProj = null;
                 }
             }
@@ -76,7 +76,7 @@ class Manager
             $env = DEPLOY_PROJECT_ENV;
         }
 
-        $this->project = new Project($this->path, $customProj, $branch, $env);
+        $this->deployer = new Deployer($this->path, $customProj, $branch, $env);
     }
 
     /**
@@ -87,7 +87,7 @@ class Manager
     public function deployProject ()
     {
         try {
-            return $this->project->deploy();
+            return $this->deployer->deploy();
         } catch (Exception $e) {
             return $e->getMessage() . "\n" . $e->getTraceAsString();
         }
@@ -98,14 +98,14 @@ class Manager
      */
     public function getSteps ()
     {
-        return $this->project->getSteps();
+        return $this->deployer->getSteps();
     }
 }
 
 /**
- * Project model
+ * Deployment model
  */
-class Project
+class Deployer
 {
     const BUILD_DIR = 'builds';
     const REPO_DIR = 'repo';
@@ -115,9 +115,9 @@ class Project
     /**
      * Custom Project model
      *
-     * @var CustomProject
+     * @var Project
      */
-    protected $customProject;
+    protected $project;
 
     /**
      * File path to the project dir.
@@ -177,11 +177,11 @@ class Project
 
     /**
      * @param string $projectPath
-     * @param \Deploy\CustomProject $customProject
+     * @param \Deploy\Project $project
      * @param string $branch
      * @param string $env
      */
-    public function __construct ($projectPath, CustomProject $customProject = null, $branch = null, $env = null)
+    public function __construct ($projectPath, Project $project = null, $branch = null, $env = null)
     {
         $ds = DIRECTORY_SEPARATOR;
         $this->path = $projectPath;
@@ -193,7 +193,7 @@ class Project
             $this->branch = $branch;
         }
         $this->env = $env;
-        $this->customProject = $customProject;
+        $this->project = $project;
     }
     /**
      * Deploy the project.
@@ -245,10 +245,10 @@ class Project
         }
 
         // project-specific
-        if ($this->customProject) {
+        if ($this->project) {
             $step = 'Running Project-specific commands...';
             try {
-                if ($this->customProject->afterDeploy($this)) {
+                if ($this->project->afterDeploy($this)) {
                     $this->steps[] = $step . 'Done';
                 }
                 else {
@@ -304,23 +304,23 @@ class Project
 /**
  * Custom Project class
  */
-abstract class CustomProject
+abstract class Project
 {
     /**
      * Run custom tasks after the project is deployed.
      *
-     * @param Project $project
+     * @param Deployer $deployer
      * @return bool
      */
-    public abstract function afterDeploy (Project $project);
+    public abstract function afterDeploy (Deployer $deployer);
 
     /**
      * Clear app cache.
      *
-     * @param Project $project
+     * @param Deployer $deployer
      * @return bool
      */
-    protected function clearCache (Project $project)
+    protected function clearCache (Deployer $deployer)
     {
         try {
             if (extension_loaded('apc') && ini_get('apc.enabled')) {
@@ -341,25 +341,25 @@ abstract class CustomProject
 /**
  * Zend Framework Project
  */
-class ZendFrameworkProject extends CustomProject
+class ZendFrameworkProject extends Project
 {
 /**
      * Run custom tasks after the project is deployed.
      *
-     * @param Project $project
+     * @param Deployer $deployer
      * @return bool
      */
-    public function afterDeploy (Project $project)
+    public function afterDeploy (Deployer $deployer)
     {
         $res = true;
-        if (is_dir($project->getBuildPath() . '/tmp')) {
-            $res = @rmdir($project->getBuildPath() . '/tmp');
+        if (is_dir($deployer->getBuildPath() . '/tmp')) {
+            $res = @rmdir($deployer->getBuildPath() . '/tmp');
         }
         if ($res) {
-            $res = @symlink($project->getSharedPath() . '/tmp', $project->getBuildPath() . '/tmp');
+            $res = @symlink($deployer->getSharedPath() . '/tmp', $deployer->getBuildPath() . '/tmp');
         }
         if ($res) {
-            return $this->clearCache($project);
+            return $this->clearCache($deployer);
         }
         return $res;
     }   
@@ -368,26 +368,26 @@ class ZendFrameworkProject extends CustomProject
 /**
  * Magento Project
  */
-class MagentoProject extends CustomProject
+class MagentoProject extends Project
 {
     /**
      * Run custom tasks after the project is deployed.
      *
-     * @param Project $project
+     * @param Deployer $deployer
      * @return bool
      */
-    public function afterDeploy (Project $project)
+    public function afterDeploy (Deployer $deployer)
     {
-        $res = @symlink($project->getSharedPath() . '/app/etc/local.xml', $project->getBuildPath() . '/app/etc/local.xml');
+        $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
         if ($res) {
-            $res = @symlink($project->getSharedPath() . '/media', $project->getBuildPath() . '/media');
+            $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
         }
         if ($res) {
-            $res = @symlink($project->getSharedPath() . '/var', $project->getBuildPath() . '/var');
+            $res = @symlink($deployer->getSharedPath() . '/var', $deployer->getBuildPath() . '/var');
         }
 
         // Environment-specific files
-        if ($project->env) {
+        if ($deployer->env) {
             $files = array(
                 '/.htaccess',
                 '/errors/local.xml',
@@ -395,13 +395,13 @@ class MagentoProject extends CustomProject
                 '/robots.txt'
             );
             foreach ($files as $file) {
-                if ($res && file_exists($project->getBuildPath() . $file . '.' . $project->env)) {
-                    $res = @rename($project->getBuildPath() . $file . '.' . $project->env, $project->getBuildPath() . $file);
+                if ($res && file_exists($deployer->getBuildPath() . $file . '.' . $deployer->env)) {
+                    $res = @rename($deployer->getBuildPath() . $file . '.' . $deployer->env, $deployer->getBuildPath() . $file);
                 }
             }
         }
         if ($res) {
-            return $this->clearCache($project);
+            return $this->clearCache($deployer);
         }
         return $res;
     }
@@ -409,10 +409,10 @@ class MagentoProject extends CustomProject
     /**
      * Clear app cache.
      * 
-     * @param Project $project
+     * @param Deployer $project
      * @return bool
      */
-    protected function clearCache (Project $project)
+    protected function clearCache (Deployer $project)
     {
         if (file_exists($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled')) {
             @rename($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
@@ -435,9 +435,6 @@ class MagentoProject extends CustomProject
 
         \Mage::app()->cleanCache();
         \Mage::app()->getCache()->getBackend()->clean();
-        if (@class_exists('\\Enterprise_PageCache_Model_Cache')) {
-            \Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->getBackend()->clean();
-        }
 
         /**
          * Run db updates
