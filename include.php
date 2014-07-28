@@ -244,11 +244,11 @@ class Deployer
             $this->steps[$index] .= 'Done';
         }
 
-        // project-specific
+        // project-specific pre
         if ($this->project) {
-            $step = 'Running Project-specific commands...';
+            $step = 'Running Project-specific pre-deployment commands...';
             try {
-                if ($this->project->afterDeploy($this)) {
+                if ($this->project->beforeDeploy($this)) {
                     $this->steps[] = $step . 'Done';
                 }
                 else {
@@ -265,6 +265,23 @@ class Deployer
         if (!@symlink($this->build, $this->current)) {
             throw new Exception('Error linking to the current directory.');
         }
+
+        // project-specific post
+        if ($this->project) {
+            $step = 'Running Project-specific post-deployment commands...';
+            try {
+                if ($this->project->afterDeploy($this)) {
+                    $this->steps[] = $step . 'Done';
+                }
+                else {
+                    $this->steps[] = $step . 'Error';
+                }
+            } catch (Exception $e) {
+                $this->steps[] = $step . 'Error';
+                throw $e;
+            }
+        }
+
         return true;
     }
     
@@ -307,12 +324,26 @@ class Deployer
 abstract class Project
 {
     /**
+     * Run custom tasks before the project is deployed.
+     *
+     * @param Deployer $deployer
+     * @return bool
+     */
+    public function beforeDeploy (Deployer $deployer)
+    {
+        return true;
+    }
+
+    /**
      * Run custom tasks after the project is deployed.
      *
      * @param Deployer $deployer
      * @return bool
      */
-    public abstract function afterDeploy (Deployer $deployer);
+    public function afterDeploy (Deployer $deployer)
+    {
+        return true;
+    }
 
     /**
      * Clear app cache.
@@ -343,13 +374,13 @@ abstract class Project
  */
 class ZendFrameworkProject extends Project
 {
-/**
+    /**
      * Run custom tasks after the project is deployed.
      *
      * @param Deployer $deployer
      * @return bool
      */
-    public function afterDeploy (Deployer $deployer)
+    public function beforeDeploy (Deployer $deployer)
     {
         $res = true;
         if (is_dir($deployer->getBuildPath() . '/tmp')) {
@@ -358,18 +389,9 @@ class ZendFrameworkProject extends Project
         if ($res) {
             $res = @symlink($deployer->getSharedPath() . '/tmp', $deployer->getBuildPath() . '/tmp');
         }
-        if ($res) {
-            return $this->clearCache($deployer);
-        }
         return $res;
-    }   
-}
+    }
 
-/**
- * Magento Project
- */
-class MagentoProject extends Project
-{
     /**
      * Run custom tasks after the project is deployed.
      *
@@ -378,6 +400,28 @@ class MagentoProject extends Project
      */
     public function afterDeploy (Deployer $deployer)
     {
+        $this->clearCache($deployer);
+        return true;
+    }
+}
+
+/**
+ * Magento Project
+ */
+class MagentoProject extends Project
+{
+    /**
+     * Run custom tasks before the project is deployed.
+     *
+     * @param Deployer $deployer
+     * @return bool
+     */
+    public function beforeDeploy (Deployer $deployer)
+    {
+        if (file_exists($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled')) {
+            @rename($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
+        }
+
         $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
         if ($res) {
             $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
@@ -400,26 +444,37 @@ class MagentoProject extends Project
                 }
             }
         }
-        if ($res) {
-            return $this->clearCache($deployer);
-        }
         return $res;
+    }
+
+    /**
+     * Run custom tasks after the project is deployed.
+     *
+     * @param Deployer $deployer
+     * @return bool
+     */
+    public function afterDeploy (Deployer $deployer)
+    {
+        $this->clearCache($deployer);
+
+        if (file_exists($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag')) {
+            @rename($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag', $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled');
+        }
+
+        return true;
     }
     
     /**
      * Clear app cache.
      * 
-     * @param Deployer $project
+     * @param Deployer $deployer
      * @return bool
      */
-    protected function clearCache (Deployer $project)
+    protected function clearCache (Deployer $deployer)
     {
-        if (file_exists($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled')) {
-            @rename($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
-        }
-        parent::clearCache($project);
+        parent::clearCache($deployer);
 
-        require $project->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
+        require $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
 
         if (!\Mage::isInstalled()) {
             return true;
@@ -442,10 +497,6 @@ class MagentoProject extends Project
         \Mage::getConfig()->reinit();
         \Mage_Core_Model_Resource_Setup::applyAllUpdates();
         \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
-
-        if (file_exists($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag')) {
-            @rename($project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag', $project->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled');
-        }
 
         return true;
     }
