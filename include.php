@@ -246,7 +246,7 @@ class Deployer
 
         // project-specific pre
         if ($this->project) {
-            $step = 'Running Project-specific pre-deployment commands...';
+            $step = 'Running project pre-deployment commands...';
             try {
                 if ($this->project->beforeDeploy($this)) {
                     $this->steps[] = $step . 'Done';
@@ -268,7 +268,7 @@ class Deployer
 
         // project-specific post
         if ($this->project) {
-            $step = 'Running Project-specific post-deployment commands...';
+            $step = 'Running project post-deployment commands...';
             try {
                 if ($this->project->afterDeploy($this)) {
                     $this->steps[] = $step . 'Done';
@@ -422,10 +422,7 @@ class MagentoProject extends Project
             @rename($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
         }
 
-        $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
-        if ($res) {
-            $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
-        }
+        $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
         if ($res) {
             $res = @symlink($deployer->getSharedPath() . '/var', $deployer->getBuildPath() . '/var');
         }
@@ -435,6 +432,7 @@ class MagentoProject extends Project
             $files = array(
                 '/.htaccess',
                 '/errors/local.xml',
+                '/app/etc/local.xml',
                 '/newrelic.php',
                 '/robots.txt'
             );
@@ -444,6 +442,12 @@ class MagentoProject extends Project
                 }
             }
         }
+
+        // Sym-link if env-specific config doesn't exist.
+        if ($res && !file_exists($deployer->getBuildPath() . '/app/etc/local.xml') && file_exists($deployer->getSharedPath() . '/app/etc/local.xml')) {
+            $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
+        }
+
         return $res;
     }
 
