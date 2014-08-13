@@ -492,8 +492,7 @@ class MagentoProject extends Project
 
         umask(0);
 
-        \Mage::app()->cleanCache();
-        \Mage::app()->getCache()->getBackend()->clean();
+        \Mage::app()->getCacheInstance()->flush();
 
         /**
          * Run db updates
