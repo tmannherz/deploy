@@ -37,10 +37,10 @@ class Manager
      *
      * @var string
      */
-    protected $allowedTypes = array(
+    protected $allowedTypes = [
         'zend' => 'Deploy\ZendFrameworkProject',
         'magento' => 'Deploy\MagentoProject'
-    );
+    ];
     
     /**
      * @param string $projectPath
@@ -159,7 +159,7 @@ class Deployer
      *
      * @var array
      */
-    protected $steps = array();
+    protected $steps = [];
 
     /**
      * Git branch
@@ -204,37 +204,61 @@ class Deployer
     {
         $this->build .= DIRECTORY_SEPARATOR . date('YmdHis');
         
-        $this->steps = $commands = array();
+        $this->steps = $commands = [];
         chdir($this->path);
 
         // create new build dir
         $this->steps[] = 'Creating build directory...';
         $commands[] = sprintf('mkdir -m 777 %s', $this->build);
 
-        // reset the repo to the HEAD
-        $this->steps[] = 'Resetting repository...';
-        $commands[] = sprintf(
-            'git --git-dir="%1$s/.git" --work-tree="%1$s" reset --hard FETCH_HEAD',
+        $gitCmd = sprintf(
+            'git --git-dir="%1$s/.git" --work-tree="%1$s" ',
             $this->repo
         );
 
-        // update repo
-        $this->steps[] = 'Updating repository...';
-        $commands[] = sprintf(
-            'git --git-dir="%1$s/.git" --work-tree="%1$s" pull',
-            $this->repo
-        );
+        // check that we're on the same branch
+        $currentBranch = trim(exec($gitCmd . 'rev-parse --abbrev-ref HEAD'));
+        if ($currentBranch && $currentBranch != 'HEAD' && $currentBranch != $this->branch) {
+            $this->steps[] = 'Fetching branches...';
+            $commands[] = sprintf(
+                '%1$s fetch',
+                $gitCmd
+            );
+
+            $this->steps[] = 'Switching branch...';
+            $commands[] = sprintf(
+                '%1$s checkout %2$s',
+                $gitCmd,
+                $this->branch
+            );
+        }
+        else {
+            // reset the repo to the HEAD
+            $this->steps[] = 'Resetting repository...';
+            $commands[] = sprintf(
+                '%1$s reset --hard FETCH_HEAD',
+                $gitCmd
+            );
+
+            // update repo
+            $this->steps[] = 'Updating repository...';
+            $commands[] = sprintf(
+                '%1$s pull',
+                $gitCmd
+            );            
+        }
+
 
         // export the repo
         $this->steps[] = 'Exporting repository...';
         $commands[] = sprintf(
-            'git --git-dir="%1$s/.git" --work-tree="%1$s" archive %2$s | tar -x -C %3$s',
-            $this->repo,
+            '%1$s archive %2$s | tar -x -C %3$s',
+            $gitCmd,
             $this->branch,
             $this->build
         );
 
-        $output = array();      
+        $output = [];      
         foreach ($commands as $index => $command) {
             exec($command, $output, $response);
             if ($response !== 0) {
@@ -429,13 +453,13 @@ class MagentoProject extends Project
 
         // Environment-specific files
         if ($deployer->env) {
-            $files = array(
+            $files = [
                 '/.htaccess',
                 '/errors/local.xml',
                 '/app/etc/local.xml',
                 '/newrelic.php',
                 '/robots.txt'
-            );
+            ];
             foreach ($files as $file) {
                 if ($res && file_exists($deployer->getBuildPath() . $file . '.' . $deployer->env)) {
                     $res = @rename($deployer->getBuildPath() . $file . '.' . $deployer->env, $deployer->getBuildPath() . $file);

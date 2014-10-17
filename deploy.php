@@ -12,7 +12,7 @@ echo "##  GIT DEPLOYMENT SCRIPT  ##\n";
 echo "##                         ##\n";
 echo "#############################\n\n";
 
-$projects = array();
+$projects = [];
 $wwwDir = '/var/www';
 $iterator = new DirectoryIterator($wwwDir);
 foreach ($iterator as $fileInfo) {
