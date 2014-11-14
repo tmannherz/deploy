@@ -238,16 +238,15 @@ class Deployer
             $commands[] = sprintf(
                 '%1$s reset --hard FETCH_HEAD',
                 $gitCmd
-            );
-
-            // update repo
-            $this->steps[] = 'Updating repository...';
-            $commands[] = sprintf(
-                '%1$s pull',
-                $gitCmd
-            );            
+            );                       
         }
 
+        // update repo
+        $this->steps[] = 'Updating repository...';
+        $commands[] = sprintf(
+            '%1$s pull',
+            $gitCmd
+        ); 
 
         // export the repo
         $this->steps[] = 'Exporting repository...';
