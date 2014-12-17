@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <deploy>
+        <!-- Base directory to search for projects. Required. -->
+        <directory>/var/www</directory>
+        <!-- Change permissions on deployed filed. Optional. -->
+        <permissions>777</permissions>
+    </deploy>
+</config>

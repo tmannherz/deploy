@@ -46,37 +46,36 @@ class Manager
      * @param string $projectPath
      * @param string $configDir
      * @param string $branch
+     * @param string|bool $perms
      */
-    public function __construct ($projectPath, $configDir, $branch = '')
+    public function __construct ($projectPath, $configDir, $branch = '', $perms = false)
     {
         $this->path = $projectPath;
         $this->name = pathinfo($projectPath, PATHINFO_BASENAME);
-        
-        $customProj = null;
-        $customClass = ucfirst(strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $this->name)));  // MyApp.com -> Myappcom
-        $customFile = $configDir . DIRECTORY_SEPARATOR . $customClass . '.php';
-        if (file_exists($customFile)) {
-            include $customFile;
-            if (class_exists($customClass)) {
-                $customProj = new $customClass();
-                if (!($customProj instanceof Project)) {
-                    $customProj = null;
-                }
+
+        $type = $environment = $defaultBranch = null;
+        $projectFile = $this->path . '/deploy.xml';
+        if (file_exists($projectFile)) {
+            $xml = @simplexml_load_file($projectFile);
+            if (!$xml) {
+                throw new Exception('Unable to parse project deploy.xml file.');
             }
-            else if (defined('DEPLOY_PROJECT_TYPE') && array_key_exists(DEPLOY_PROJECT_TYPE, $this->allowedTypes)) {
-                $customClass = $this->allowedTypes[DEPLOY_PROJECT_TYPE];
-                $customProj = new $customClass();
-            }
+            $type = isset($xml->project->type) ? (string)$xml->project->type : false;
+            $defaultBranch = isset($xml->project->default_branch) ? (string)$xml->project->default_branch : false;
+            $environment = isset($xml->project->environment) ? (string)$xml->project->environment : false;
         }
-        if (!$branch && defined('DEPLOY_BRANCH')) {
-            $branch = DEPLOY_BRANCH;
+        if ($type && array_key_exists($type, $this->allowedTypes)) {
+            $projectClass = $this->allowedTypes[$type];
+            $project = new $projectClass($environment);
         }
-        $env = null;
-        if (defined('DEPLOY_PROJECT_ENV')) {
-            $env = DEPLOY_PROJECT_ENV;
+        else {
+            $project = new Project($environment);
+        }
+        if (!$branch && $defaultBranch) {
+            $branch = $defaultBranch;
         }
 
-        $this->deployer = new Deployer($this->path, $customProj, $branch, $env);
+        $this->deployer = new Deployer($this->path, $project, $branch, $perms);
     }
 
     /**
@@ -169,31 +168,32 @@ class Deployer
     protected $branch = 'master';
 
     /**
-     * Environment
+     * File permissions.
      *
      * @var string
      */
-    public $env = null;
+    protected $perms = null;
 
     /**
      * @param string $projectPath
      * @param \Deploy\Project $project
      * @param string $branch
-     * @param string $env
+     * @param string $perms
      */
-    public function __construct ($projectPath, Project $project = null, $branch = null, $env = null)
+    public function __construct ($projectPath, Project $project, $branch = null, $perms = null)
     {
-        $ds = DIRECTORY_SEPARATOR;
+        $ds = '/';  //DIRECTORY_SEPARATOR;
         $this->path = $projectPath;
         $this->repo = $projectPath . $ds . self::REPO_DIR;
         $this->current = $projectPath . $ds . self::CURRENT_DIR;
         $this->build = $projectPath . $ds . self::BUILD_DIR;
         $this->shared = $projectPath . $ds . self::SHARED_DIR;
+
+        $this->project = $project;
         if ($branch) {
             $this->branch = $branch;
         }
-        $this->env = $env;
-        $this->project = $project;
+        $this->perms = $perms;
     }
     /**
      * Deploy the project.
@@ -202,14 +202,25 @@ class Deployer
      */
     public function deploy ()
     {
-        $this->build .= DIRECTORY_SEPARATOR . date('YmdHis');
+        $os = php_uname('s');
+        /**
+         * Windows only supported via Git Bash
+         */
+        $isWin = stripos($os, 'windows') !== false ? true : false;
+
+        $this->build .= '/' . date('YmdHis');
         
         $this->steps = $commands = [];
         chdir($this->path);
 
         // create new build dir
         $this->steps[] = 'Creating build directory...';
-        $commands[] = sprintf('mkdir -m 777 %s', $this->build);
+        if ($isWin) {
+            $commands[] = sprintf('mkdir "%s"', $this->build);
+        }
+        else {
+            $commands[] = sprintf('mkdir -m 777 %s', $this->build);
+        }
 
         $gitCmd = sprintf(
             'git --git-dir="%1$s/.git" --work-tree="%1$s" ',
@@ -236,7 +247,7 @@ class Deployer
             // reset the repo to the HEAD
             $this->steps[] = 'Resetting repository...';
             $commands[] = sprintf(
-                '%1$s reset --hard FETCH_HEAD',
+                '%1$s fetch && %1$s reset --hard FETCH_HEAD',
                 $gitCmd
             );                       
         }
@@ -257,6 +268,16 @@ class Deployer
             $this->build
         );
 
+        if (!$isWin && $this->perms) {
+            // update file permissions
+            $this->steps[] = 'Updating file permissions...';
+            $commands[] = sprintf(
+                'chmod -R %s %s',
+                $this->perms,
+                $this->build
+            );
+        }
+
         $output = [];      
         foreach ($commands as $index => $command) {
             exec($command, $output, $response);
@@ -268,19 +289,17 @@ class Deployer
         }
 
         // project-specific pre
-        if ($this->project) {
-            $step = 'Running project pre-deployment commands...';
-            try {
-                if ($this->project->beforeDeploy($this)) {
-                    $this->steps[] = $step . 'Done';
-                }
-                else {
-                    $this->steps[] = $step . 'Error';
-                }
-            } catch (Exception $e) {
-                $this->steps[] = $step . 'Error';
-                throw $e;
+        $step = 'Running project pre-deployment commands...';
+        try {
+            if ($this->project->beforeDeploy($this)) {
+                $this->steps[] = $step . 'Done';
             }
+            else {
+                $this->steps[] = $step . 'Error';
+            }
+        } catch (Exception $e) {
+            $this->steps[] = $step . 'Error';
+            throw $e;
         }
 
         // point current to the build
@@ -290,19 +309,17 @@ class Deployer
         }
 
         // project-specific post
-        if ($this->project) {
-            $step = 'Running project post-deployment commands...';
-            try {
-                if ($this->project->afterDeploy($this)) {
-                    $this->steps[] = $step . 'Done';
-                }
-                else {
-                    $this->steps[] = $step . 'Error';
-                }
-            } catch (Exception $e) {
-                $this->steps[] = $step . 'Error';
-                throw $e;
+        $step = 'Running project post-deployment commands...';
+        try {
+            if ($this->project->afterDeploy($this)) {
+                $this->steps[] = $step . 'Done';
             }
+            else {
+                $this->steps[] = $step . 'Error';
+            }
+        } catch (Exception $e) {
+            $this->steps[] = $step . 'Error';
+            throw $e;
         }
 
         return true;
@@ -344,8 +361,23 @@ class Deployer
 /**
  * Custom Project class
  */
-abstract class Project
+class Project
 {
+    /**
+     * Environment
+     *
+     * @var string
+     */
+    protected $env = null;
+
+    /**
+     * @param string $env
+     */
+    public function __construct ($env = null)
+    {
+        $this->env = $env;
+    }
+
     /**
      * Run custom tasks before the project is deployed.
      *
@@ -441,8 +473,8 @@ class MagentoProject extends Project
      */
     public function beforeDeploy (Deployer $deployer)
     {
-        if (file_exists($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled')) {
-            @rename($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled', $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag');
+        if (file_exists($deployer->getBuildPath() . '/maintenance.flag.disabled')) {
+            @rename($deployer->getBuildPath() . '/maintenance.flag.disabled', $deployer->getBuildPath() . '/maintenance.flag');
         }
 
         $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
@@ -451,7 +483,7 @@ class MagentoProject extends Project
         }
 
         // Environment-specific files
-        if ($deployer->env) {
+        if ($this->env) {
             $files = [
                 '/.htaccess',
                 '/errors/local.xml',
@@ -460,8 +492,8 @@ class MagentoProject extends Project
                 '/robots.txt'
             ];
             foreach ($files as $file) {
-                if ($res && file_exists($deployer->getBuildPath() . $file . '.' . $deployer->env)) {
-                    $res = @rename($deployer->getBuildPath() . $file . '.' . $deployer->env, $deployer->getBuildPath() . $file);
+                if ($res && file_exists($deployer->getBuildPath() . $file . '.' . $this->env)) {
+                    $res = @rename($deployer->getBuildPath() . $file . '.' . $this->env, $deployer->getBuildPath() . $file);
                 }
             }
         }
@@ -484,8 +516,8 @@ class MagentoProject extends Project
     {
         $this->clearCache($deployer);
 
-        if (file_exists($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag')) {
-            @rename($deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag', $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'maintenance.flag.disabled');
+        if (file_exists($deployer->getBuildPath() . '/maintenance.flag')) {
+            @rename($deployer->getBuildPath() . '/maintenance.flag', $deployer->getBuildPath() . '/maintenance.flag.disabled');
         }
 
         return true;
@@ -501,7 +533,7 @@ class MagentoProject extends Project
     {
         parent::clearCache($deployer);
 
-        require $deployer->getBuildPath() . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
+        require $deployer->getBuildPath() . '/app/Mage.php';
 
         if (!\Mage::isInstalled()) {
             return true;

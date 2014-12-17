@@ -12,8 +12,25 @@ echo "##  GIT DEPLOYMENT SCRIPT  ##\n";
 echo "##                         ##\n";
 echo "#############################\n\n";
 
+$xmlFile = dirname(__FILE__) . '/config.xml';
+if (!file_exists($xmlFile)) {
+    echo "Config XML not found. Please see config.xml.sample.\n";
+    exit;
+}
+$xml = @simplexml_load_file($xmlFile);
+if (!$xml) {
+    echo "Unable to read config.xml.\n";
+    exit;
+}
+
+$wwwDir = (string)$xml->deploy->directory;
+if (!$wwwDir) {
+    echo "Project base directory not defined. Please see config.xml.sample.\n";
+    exit;
+}
+$perms = isset($xml->deploy->permissions) ? (string)$xml->deploy->permissions : false;
+
 $projects = [];
-$wwwDir = '/var/www';
 $iterator = new DirectoryIterator($wwwDir);
 foreach ($iterator as $fileInfo) {
     if ($fileInfo->isDir()) {
@@ -26,6 +43,7 @@ if (count($projects) == 1) {
     $project = $projects[0];
 }
 else if (count($projects)) {
+    sort($projects);
     foreach ($projects as $index => $project) {
         echo ($index + 1) . ') ' . $project . "\n";
     }
@@ -54,22 +72,31 @@ if ($continue != 'y' && $continue != 'yes') {
 
 require_once 'include.php';
 use Deploy\Manager;
-$manager = new Manager(
-    $wwwDir . DIRECTORY_SEPARATOR . $project,
-    $wwwDir . DIRECTORY_SEPARATOR . 'deploy' . DIRECTORY_SEPARATOR . 'projects',
-    $branch
-);
-$result = $manager->deployProject();
-$steps = $manager->getSteps();
-echo implode("\n", $steps);
-if (is_string($result)) {
-    echo "\nDeployment failed.\n";
-    echo $result;
-}
-else if ($result === true) {
-    echo "\nProject successfully deployed.";
-}
-else {
+
+try {
+    $manager = new Manager(
+        $wwwDir . '/' . $project,
+        $wwwDir . '/deploy/projects',
+        $branch,
+        $perms
+    );
+    $result = $manager->deployProject();
+    $steps = $manager->getSteps();
+    echo implode("\n", $steps);
+    if (is_string($result)) {
+        echo "\nDeployment failed.\n";
+        echo $result;
+    }
+    else if ($result === true) {
+        echo "\nProject successfully deployed.";
+    }
+    else {
+        echo "\nDeployment failed.";
+    }
+} catch (Exception $e) {
+    echo $e->getMessage() . "\n";
+    echo $e->getTraceAsString() . "\n";
     echo "\nDeployment failed.";
 }
+
 echo "\n";

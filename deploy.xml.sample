@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <project id="my.project.com">
+        <type>magento</type>
+        <default_branch>master</default_branch>
+        <environment>dev</environment>
+    </project>
+</config>
