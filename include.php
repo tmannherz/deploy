@@ -403,6 +403,8 @@ class Project
     /**
      * Clear app cache.
      *
+     * NOTE: When run from the CLI, PHP will not clear FPM or Apache opcache.
+     *
      * @param Deployer $deployer
      * @return bool
      */
@@ -555,6 +557,19 @@ class MagentoProject extends Project
         \Mage::getConfig()->reinit();
         \Mage_Core_Model_Resource_Setup::applyAllUpdates();
         \Mage_Core_Model_Resource_Setup::applyAllDataUpdates();
+
+        /**
+         * Clear opcache via script.
+         *
+         * @todo This shouldn't be hardcoded here.
+         */
+        $script = Mage::getBaseUrl() . 'externals/clear-cache.php?type=opcache';
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $script);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_USERPWD, 'admin:dartmouth');
+        curl_exec($ch);
+        curl_close($ch);
 
         return true;
     }
