@@ -563,7 +563,7 @@ class MagentoProject extends Project
          *
          * @todo This shouldn't be hardcoded here.
          */
-        $script = Mage::getBaseUrl() . 'externals/clear-cache.php?type=opcache';
+        $script = \Mage::getBaseUrl() . 'externals/clear-cache.php?type=opcache';
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $script);
         curl_setopt($ch, CURLOPT_HEADER, 0);
