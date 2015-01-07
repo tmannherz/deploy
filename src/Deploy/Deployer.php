@@ -211,7 +211,7 @@ class Deployer
         // point current to the build
         @unlink($this->current);
         if (!@symlink($this->build, $this->current)) {
-            //throw new Exception('Error linking to the current directory.');
+            throw new Exception('Error linking to the current directory.');
         }
 
         // project-specific post
@@ -237,6 +237,15 @@ class Deployer
     public function getSteps ()
     {
         return $this->steps;
+    }
+
+    /**
+     * @param string $step
+     * @return array
+     */
+    public function addStep ($step)
+    {
+        return $this->steps[] = $step;
     }
 
     /**

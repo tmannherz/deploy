@@ -95,7 +95,15 @@ class Project
         if (isset($this->hooks->$hookName) && isset($this->hooks->$hookName->include)) {
             include $deployer->getProjectPath() . '/' . (string)$this->hooks->$hookName->include;
             if (isset($this->hooks->$hookName->call)) {
-                return call_user_func((string)$this->hooks->$hookName->call, $deployer);
+                if (call_user_func((string)$this->hooks->$hookName->call, $deployer)) {
+                    $deployer->addStep($hookName . ' hook completed.');
+                }
+                else {
+                    $deployer->addStep($hookName . ' hook failed.');
+                }
+            }
+            else {
+                $deployer->addStep($hookName . ' hook complete.');
             }
             return true;
         }
