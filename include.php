@@ -568,6 +568,7 @@ class MagentoProject extends Project
         curl_setopt($ch, CURLOPT_URL, $script);
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_USERPWD, 'admin:dartmouth');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_exec($ch);
         curl_close($ch);
 
