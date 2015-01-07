@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <project id="my.project.com">
-        <type>magento</type>
+        <type>magento</type><!-- Optional, magento or zend -->
         <default_branch>master</default_branch>
         <environment>dev</environment>
+        <hooks><!-- Available hooks. Optional. -->
+            <beforeDeploy>
+                <include>afterDeploy.php</include><!-- Relative to this file's path -->
+                <call>myFunc</call><!-- Optional, function or method to invoke -->
+            </beforeDeploy>
+            <afterDeploy>
+                <include>afterDeploy.php</include>
+                <call>afterDeploy</call>
+            </afterDeploy>
+        </hooks>
     </project>
 </config>

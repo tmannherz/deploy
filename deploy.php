@@ -5,6 +5,8 @@
  * @author Todd Mannherz <todd.mannherz@gmail.com>
  */
 
+namespace Deploy;
+
 echo "\n";
 echo "#############################\n";
 echo "##                         ##\n";
@@ -31,7 +33,7 @@ if (!$wwwDir) {
 $perms = isset($xml->deploy->permissions) ? (string)$xml->deploy->permissions : false;
 
 $projects = [];
-$iterator = new DirectoryIterator($wwwDir);
+$iterator = new \DirectoryIterator($wwwDir);
 foreach ($iterator as $fileInfo) {
     if ($fileInfo->isDir()) {
         if (is_dir($fileInfo->getRealPath() . '/builds') && is_dir($fileInfo->getRealPath() . '/repo')) {
@@ -70,8 +72,13 @@ if ($continue != 'y' && $continue != 'yes') {
     exit;
 }
 
-require_once 'include.php';
-use Deploy\Manager;
+/**
+ * Setup the autoloader.
+ */
+use Deploy\Autoloader;
+require_once __DIR__ . '/src/Deploy/Autoloader.php';
+$autoloader = new Autoloader(__NAMESPACE__, __DIR__ . DIRECTORY_SEPARATOR . 'src');
+$autoloader->register();
 
 try {
     $manager = new Manager(
@@ -93,7 +100,7 @@ try {
     else {
         echo "\nDeployment failed.";
     }
-} catch (Exception $e) {
+} catch (\Exception $e) {
     echo $e->getMessage() . "\n";
     echo $e->getTraceAsString() . "\n";
     echo "\nDeployment failed.";
