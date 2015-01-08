@@ -39,6 +39,13 @@ class Deployer
     protected $build;
 
     /**
+     * Build date
+     *
+     * @var string
+     */
+    protected $buildDate;
+
+    /**
      * Repo path
      *
      * @var string
@@ -92,7 +99,8 @@ class Deployer
         $this->path = $projectPath;
         $this->repo = $projectPath . $ds . self::REPO_DIR;
         $this->current = $projectPath . $ds . self::CURRENT_DIR;
-        $this->build = $projectPath . $ds . self::BUILD_DIR;
+        $this->buildDate = date('YmdHis');
+        $this->build = $projectPath . $ds . self::BUILD_DIR . $ds . $this->buildDate;
         $this->shared = $projectPath . $ds . self::SHARED_DIR;
 
         $this->project = $project;
@@ -113,8 +121,6 @@ class Deployer
          * Windows only supported via Git Bash
          */
         $isWin = stripos($os, 'windows') !== false ? true : false;
-
-        $this->build .= '/' . date('YmdHis');
 
         $this->steps = $commands = [];
         chdir($this->path);
@@ -262,6 +268,14 @@ class Deployer
     public function getBuildPath ()
     {
         return $this->build;
+    }
+
+    /**
+     * @return string
+     */
+    public function getBuildDate ()
+    {
+        return $this->buildDate;
     }
 
     /**
