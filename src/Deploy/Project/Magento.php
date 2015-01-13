@@ -49,6 +49,10 @@ class Magento extends Project
             $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
         }
 
+        if ($res) {
+            $res = parent::beforeDeploy($deployer);
+        }
+
         return $res;
     }
 
@@ -66,7 +70,7 @@ class Magento extends Project
             @rename($deployer->getBuildPath() . '/maintenance.flag', $deployer->getBuildPath() . '/maintenance.flag.disabled');
         }
 
-        return true;
+        return parent::afterDeploy($deployer);
     }
 
     /**

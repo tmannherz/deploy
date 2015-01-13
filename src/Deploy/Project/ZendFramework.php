@@ -26,6 +26,9 @@ class ZendFramework extends Project
         if ($res) {
             $res = @symlink($deployer->getSharedPath() . '/tmp', $deployer->getBuildPath() . '/tmp');
         }
+        if ($res) {
+            $res = parent::beforeDeploy($deployer);
+        }
         return $res;
     }
 
@@ -38,6 +41,6 @@ class ZendFramework extends Project
     public function afterDeploy (Deployer $deployer)
     {
         $this->clearCache($deployer);
-        return true;
+        return parent::afterDeploy($deployer);
     }
 }
