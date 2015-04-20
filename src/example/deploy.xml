@@ -4,6 +4,7 @@
         <type>magento</type><!-- Optional, magento or zend -->
         <default_branch>master</default_branch>
         <environment>dev</environment>
+        <use_composer /><!-- If present, run composer install after deployment -->
         <hooks><!-- Available hooks. Optional. -->
             <beforeDeploy>
                 <include>afterDeploy.php</include><!-- Relative to this file's path -->

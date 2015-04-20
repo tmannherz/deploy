@@ -11,7 +11,7 @@ function afterDeploy (Deployer $deployer)
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $script);
     curl_setopt($ch, CURLOPT_HEADER, 0);
-    curl_setopt($ch, CURLOPT_USERPWD, 'admin:dartmouth');
+    curl_setopt($ch, CURLOPT_USERPWD, 'user:password');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_exec($ch);
     curl_close($ch);
@@ -22,7 +22,7 @@ function afterDeploy (Deployer $deployer)
      * @link https://docs.newrelic.com/docs/agents/php-agent/features/recording-deployments-using-php-script
      */
     $url = "https://api.newrelic.com/deployments.xml";
-    $apiKey = '1ed1a324c12415a2435415cd0ef1e895391ecec7e70907d';
+    $apiKey = '{api_key}';
     $header = ['x-api-key:' . $apiKey];
     $appName = 'Magento - Dev';
     $depDescription = $deployer->getBuildDate() . ' deployment.';

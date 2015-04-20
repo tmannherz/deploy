@@ -27,13 +27,21 @@ class Project
     protected $hooks = null;
 
     /**
+     * Composer install before deployment?
+     *
+     * @var bool
+     */
+    protected $useComposer = false;
+
+    /**
      * @param string $env
      * @param \SimpleXMLElement $hooks
      */
-    public function __construct ($env = null, \SimpleXMLElement $hooks = null)
+    public function __construct ($env = null, \SimpleXMLElement $hooks = null, $useComposer = false)
     {
         $this->env = $env;
         $this->hooks = $hooks;
+        $this->useComposer = $useComposer;
     }
 
     /**
@@ -44,6 +52,18 @@ class Project
      */
     public function beforeDeploy (Deployer $deployer)
     {
+        if ($this->useComposer) {
+            $cwd = getcwd();
+            $command = 'composer install --no-ansi --no-dev --no-interaction --no-progress --no-scripts --optimize-autoloader';
+            chdir($deployer->getBuildPath());
+            exec($command, null, $response);
+            if ($cwd) {
+                chdir($cwd);
+            }
+            if ($response !== 0) {
+                return false;
+            }
+        }
         $this->callHook($deployer, 'beforeDeploy');
         return true;
     }

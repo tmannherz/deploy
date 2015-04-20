@@ -52,7 +52,7 @@ class Manager
         $this->path = $projectPath;
         $this->name = pathinfo($projectPath, PATHINFO_BASENAME);
 
-        $type = $environment = $defaultBranch = $hooks = null;
+        $type = $environment = $defaultBranch = $hooks = $useComposer = null;
         $projectFile = $this->path . '/deploy.xml';
         if (file_exists($projectFile)) {
             $xml = @simplexml_load_file($projectFile);
@@ -62,14 +62,15 @@ class Manager
             $type = isset($xml->project->type) ? (string)$xml->project->type : false;
             $defaultBranch = isset($xml->project->default_branch) ? (string)$xml->project->default_branch : false;
             $environment = isset($xml->project->environment) ? (string)$xml->project->environment : false;
+            $useComposer = isset($xml->project->use_composer) ? true : false;
             $hooks = isset($xml->project->hooks) ? $xml->project->hooks : null;
         }
         if ($type && array_key_exists($type, $this->allowedTypes)) {
             $projectClass = $this->allowedTypes[$type];
-            $project = new $projectClass($environment, $hooks);
+            $project = new $projectClass($environment, $hooks, $useComposer);
         }
         else {
-            $project = new Project($environment, $hooks);
+            $project = new Project($environment, $hooks, $useComposer);
         }
         if (!$branch && $defaultBranch) {
             $branch = $defaultBranch;
