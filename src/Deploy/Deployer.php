@@ -107,7 +107,7 @@ class Deployer
         if ($branch) {
             $this->branch = $branch;
         }
-        $this->perms = $perms ? $perms : '664';
+        $this->perms = $perms;
     }
     /**
      * Deploy the project.
@@ -131,7 +131,7 @@ class Deployer
             $commands[] = sprintf('mkdir "%s"', $this->build);
         }
         else {
-            $commands[] = sprintf('mkdir -m %s %s', $this->perms, $this->build);
+            $commands[] = sprintf('mkdir -m %s %s', ($this->perms ? $this->perms : '775'), $this->build);
         }
 
         $gitCmd = sprintf(
@@ -183,11 +183,19 @@ class Deployer
         // update file permissions
         if (!$isWin) {
             $this->steps[] = 'Updating file permissions...';
-            $commands[] = sprintf(
-                'chmod -R %s %s',
-                $this->perms,
-                $this->build
-            );
+            if ($this->perms) {
+                $commands[] = sprintf(
+                    'chmod -R %s %s',
+                    $this->perms,
+                    $this->build
+                );
+            }
+            else {
+                $commands[] = sprintf(
+                    'find %1$s -type d -exec chmod 775 {} \; && find %1$s -type f -exec chmod 664 {} \;',
+                    $this->build
+                );
+            }
         }
 
         $output = [];
