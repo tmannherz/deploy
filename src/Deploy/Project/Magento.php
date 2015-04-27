@@ -50,7 +50,7 @@ class Magento extends Project
         }
 
         if ($res) {
-            @exec('chmod 600 ' . $deployer->getBuildPath() . '/app/etc/local.xml');  // make local.xml unavailable
+            @exec('chmod 644 ' . $deployer->getBuildPath() . '/app/etc/local.xml');
             $res = parent::beforeDeploy($deployer);
         }
 
