@@ -50,7 +50,7 @@ class Magento extends Project
         }
 
         if ($res) {
-            exec('chmod +x ' . $deployer->getBuildPath() . '/cron.sh', null, $return);
+            exec('chmod +x ' . $deployer->getBuildPath() . '/cron.sh', $output, $return);
             if ($return !== 0) {
                 $res = false;
             }
