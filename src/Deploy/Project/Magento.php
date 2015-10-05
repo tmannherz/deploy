@@ -56,6 +56,11 @@ class Magento extends Project
             }
         }
 
+        // remove dev directory
+        if ($res && file_exists($deployer->getBuildPath() . '/dev')) {
+            @rrmdir($deployer->getBuildPath() . '/dev');
+        }
+
         if ($res) {
             @exec('chmod 644 ' . $deployer->getBuildPath() . '/app/etc/local.xml');
             $res = parent::beforeDeploy($deployer);

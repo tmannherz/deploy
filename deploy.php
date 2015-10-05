@@ -77,6 +77,7 @@ if ($continue != 'y' && $continue != 'yes') {
  */
 use Deploy\Autoloader;
 require_once __DIR__ . '/src/Deploy/Autoloader.php';
+require_once __DIR__ . '/src/util.php';
 $autoloader = new Autoloader(__NAMESPACE__, __DIR__ . DIRECTORY_SEPARATOR . 'src');
 $autoloader->register();
 

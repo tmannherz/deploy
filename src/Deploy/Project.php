@@ -53,10 +53,11 @@ class Project
     public function beforeDeploy (Deployer $deployer)
     {
         if ($this->useComposer) {
+            $output = [];
             $cwd = getcwd();
             $command = 'composer install --no-ansi --no-dev --no-interaction --no-progress --no-scripts --optimize-autoloader';
             chdir($deployer->getBuildPath());
-            exec($command, null, $response);
+            exec($command, $output, $response);
             if ($cwd) {
                 chdir($cwd);
             }
