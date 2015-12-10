@@ -92,11 +92,6 @@ class Project
     protected function clearCache (Deployer $deployer)
     {
         try {
-            if (extension_loaded('apc') && ini_get('apc.enabled')) {
-                apc_clear_cache();
-                apc_clear_cache('opcode');
-                apc_clear_cache('user');
-            }
             if (function_exists('opcache_reset') && ini_get('opcache.enable')) {
                 opcache_reset();
             }
