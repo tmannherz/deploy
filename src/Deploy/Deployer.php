@@ -196,7 +196,7 @@ class Deployer
         }
 
         // update file permissions
-        $this->steps[] = 'Updating file permissions...';
+        $step = 'Updating file permissions...';
         try {
             if ($this->project->setFilePermissions($this)) {
                 $this->steps[] = $step . 'Done';

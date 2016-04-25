@@ -199,13 +199,21 @@ class Project
     public function setPerms ($directory, $file = null, $owner = null)
     {
         if (is_array($directory)) {
-            return $this->setPerms($directory['directory'], $directory['file'] ?? null, $directory['owner'] ?? null);
+            return $this->setPerms(
+                $directory['directory'] ?? null,
+                $directory['file'] ?? null,
+                $directory['owner'] ?? null
+            );
         }
-        $this->perms['directory'] = $directory;
+        if ($directory) {
+            $this->perms['directory'] = $directory;
+        }
         if (!$file) {
             $file = $directory;
         }
-        $this->perms['file'] = $file;
+        if ($file) {
+            $this->perms['file'] = $file;
+        }
         if ($owner) {
             $this->perms['owner'] = $owner;
         }
