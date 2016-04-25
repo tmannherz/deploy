@@ -12,6 +12,25 @@ use Deploy\Deployer;
 class Magento extends Project
 {
     /**
+     * Magento constructor.
+     * 
+     * @param string $env
+     * @param \SimpleXMLElement $hooks
+     * @param bool $useComposer
+     * @param array $perms
+     */
+    public function __construct ($env, \SimpleXMLElement $hooks, $useComposer, array $perms)
+    {
+        if (!isset($perms['directory'])) {
+            $perms['directory'] = '550';
+        }
+        if (!isset($perms['file'])) {
+            $perms['file'] = '440';
+        }
+        parent::__construct($env, $hooks, $useComposer, $perms);
+    }
+
+    /**
      * Run custom tasks before the project is deployed.
      *
      * @param Deployer $deployer
@@ -49,23 +68,30 @@ class Magento extends Project
             $res = @symlink($deployer->getSharedPath() . '/app/etc/local.xml', $deployer->getBuildPath() . '/app/etc/local.xml');
         }
 
-        if ($res) {
-            exec('chmod +x ' . $deployer->getBuildPath() . '/cron.sh', $output, $return);
-            if ($return !== 0) {
-                $res = false;
-            }
-        }
-
         // remove dev directory
         if ($res && file_exists($deployer->getBuildPath() . '/dev')) {
             @rrmdir($deployer->getBuildPath() . '/dev');
         }
 
         if ($res) {
-            @exec('chmod 644 ' . $deployer->getBuildPath() . '/app/etc/local.xml*');
-            $res = parent::beforeDeploy($deployer);
+            return parent::beforeDeploy($deployer);
         }
+        return false;
+    }
 
+    /**
+     * Update file permissions for the deployed project.
+     *
+     * @link http://devdocs.magento.com/guides/m1x/install/installer-privileges_after.html
+     * @param Deployer $deployer
+     * @return bool
+     */
+    public function setFilePermissions (Deployer $deployer)
+    {
+        $res = parent::setFilePermissions($deployer);
+        if ($res) {
+            $res = $this->exec('chmod +x ' . $deployer->getBuildPath() . '/cron.sh');
+        }
         return $res;
     }
 

@@ -30,7 +30,6 @@ if (!$wwwDir) {
     echo "Project base directory not defined. Please see config.xml.sample.\n";
     exit;
 }
-$perms = isset($xml->deploy->permissions) ? (string)$xml->deploy->permissions : false;
 
 $projects = [];
 $iterator = new \DirectoryIterator($wwwDir);
@@ -85,8 +84,7 @@ try {
     $manager = new Manager(
         $wwwDir . '/' . $project,
         $wwwDir . '/deploy/projects',
-        $branch,
-        $perms
+        $branch
     );
     $result = $manager->deployProject();
     $steps = $manager->getSteps();

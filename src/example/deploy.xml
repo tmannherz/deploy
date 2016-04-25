@@ -15,5 +15,10 @@
                 <call>afterDeploy</call>
             </afterDeploy>
         </hooks>
+        <perms><!-- Default filesystem permissions -->
+            <directory>775</directory>
+            <file>664</file>
+            <owner>www-data</owner>
+        </perms>
     </project>
 </config>

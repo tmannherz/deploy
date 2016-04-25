@@ -81,21 +81,14 @@ class Deployer
     protected $branch = 'master';
 
     /**
-     * File permissions.
-     *
-     * @var string
-     */
-    protected $perms = null;
-
-    /**
-     * @param string $projectPath
      * @param \Deploy\Project $project
+     * @param string $projectPath
      * @param string $branch
-     * @param string $perms
      */
-    public function __construct ($projectPath, Project $project, $branch = null, $perms = null)
+    public function __construct (Project $project, $projectPath, $branch = null)
     {
         $ds = '/';  //DIRECTORY_SEPARATOR;
+        $this->project = $project;
         $this->path = $projectPath;
         $this->repo = $projectPath . $ds . self::REPO_DIR;
         $this->current = $projectPath . $ds . self::CURRENT_DIR;
@@ -103,11 +96,9 @@ class Deployer
         $this->build = $projectPath . $ds . self::BUILD_DIR . $ds . $this->buildDate;
         $this->shared = $projectPath . $ds . self::SHARED_DIR;
 
-        $this->project = $project;
         if ($branch) {
             $this->branch = $branch;
         }
-        $this->perms = $perms;
     }
     /**
      * Deploy the project.
@@ -131,7 +122,7 @@ class Deployer
             $commands[] = sprintf('mkdir "%s"', $this->build);
         }
         else {
-            $commands[] = sprintf('mkdir -m %s %s', ($this->perms ? $this->perms : '775'), $this->build);
+            $commands[] = sprintf('mkdir -m %s %s', 775, $this->build);
         }
 
         $gitCmd = sprintf(
@@ -179,24 +170,6 @@ class Deployer
             $this->branch,
             $this->build
         );
-        
-        // update file permissions
-        if (!$isWin) {
-            $this->steps[] = 'Updating file permissions...';
-            if ($this->perms) {
-                $commands[] = sprintf(
-                    'chmod -R %s %s',
-                    $this->perms,
-                    $this->build
-                );
-            }
-            else {
-                $commands[] = sprintf(
-                    'find %1$s -type d -exec chmod 775 {} \; && find %1$s -type f -exec chmod 664 {} \;',
-                    $this->build
-                );
-            }
-        }
 
         $output = [];
         foreach ($commands as $index => $command) {
@@ -212,6 +185,20 @@ class Deployer
         $step = 'Running project pre-deployment commands...';
         try {
             if ($this->project->beforeDeploy($this)) {
+                $this->steps[] = $step . 'Done';
+            }
+            else {
+                $this->steps[] = $step . 'Error';
+            }
+        } catch (Exception $e) {
+            $this->steps[] = $step . 'Error';
+            throw $e;
+        }
+
+        // update file permissions
+        $this->steps[] = 'Updating file permissions...';
+        try {
+            if ($this->project->setFilePermissions($this)) {
                 $this->steps[] = $step . 'Done';
             }
             else {

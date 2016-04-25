@@ -45,13 +45,13 @@ class Manager
      * @param string $projectPath
      * @param string $configDir
      * @param string $branch
-     * @param string|bool $perms
      */
-    public function __construct ($projectPath, $configDir, $branch = '', $perms = false)
+    public function __construct ($projectPath, $configDir, $branch = '')
     {
         $this->path = $projectPath;
         $this->name = pathinfo($projectPath, PATHINFO_BASENAME);
 
+        $perms = [];
         $type = $environment = $defaultBranch = $hooks = $useComposer = null;
         $projectFile = $this->path . '/deploy.xml';
         if (file_exists($projectFile)) {
@@ -64,19 +64,28 @@ class Manager
             $environment = isset($xml->project->environment) ? (string)$xml->project->environment : false;
             $useComposer = isset($xml->project->use_composer) ? true : false;
             $hooks = isset($xml->project->hooks) ? $xml->project->hooks : null;
+            if (isset($xml->project->perms->directory)) {
+                $perms['directory'] = (string)$xml->project->perms->directory;
+            }
+            if (isset($xml->project->perms->file)) {
+                $perms['file'] = (string)$xml->project->perms->file;
+            }
+            if (isset($xml->project->perms->owner)) {
+                $perms['owner'] = (string)$xml->project->perms->owner;
+            }
         }
         if ($type && array_key_exists($type, $this->allowedTypes)) {
             $projectClass = $this->allowedTypes[$type];
-            $project = new $projectClass($environment, $hooks, $useComposer);
+            $project = new $projectClass($environment, $hooks, $useComposer, $perms);
         }
         else {
-            $project = new Project($environment, $hooks, $useComposer);
+            $project = new Project($environment, $hooks, $useComposer, $perms);
         }
         if (!$branch && $defaultBranch) {
             $branch = $defaultBranch;
         }
 
-        $this->deployer = new Deployer($this->path, $project, $branch, $perms);
+        $this->deployer = new Deployer($project, $this->path, $branch);
     }
 
     /**

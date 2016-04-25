@@ -3,7 +3,5 @@
     <deploy>
         <!-- Base directory to search for projects. Required. -->
         <directory>/var/www</directory>
-        <!-- Change permissions on deployed files. Optional. -->
-        <permissions>777</permissions>
     </deploy>
 </config>
