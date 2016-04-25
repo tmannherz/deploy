@@ -82,8 +82,9 @@ else {
     $branch = trim(fgets(STDIN));
 }
 
-echo "\nAbout to deploy " . ($branch ? $branch : 'default') . ' branch for ' . $project . ".\nDo you wish to continue? (y/n): ";
+echo "\nAbout to deploy " . ($branch ? $branch : 'default') . ' branch for ' . $project . ".\n";
 if (!$projectArg) {
+    echo 'Do you wish to continue? (y/n): ';
     $continue = strtolower(trim(fgets(STDIN)));
     if ($continue != 'y' && $continue != 'yes') {
         echo "Aborting...\n";

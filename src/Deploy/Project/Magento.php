@@ -19,7 +19,7 @@ class Magento extends Project
      * @param bool $useComposer
      * @param array $perms
      */
-    public function __construct ($env, \SimpleXMLElement $hooks, $useComposer, array $perms)
+    public function __construct ($env = null, \SimpleXMLElement $hooks = null, $useComposer = false, array $perms = [])
     {
         if (!isset($perms['directory'])) {
             $perms['directory'] = '550';
