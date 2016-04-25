@@ -28,7 +28,19 @@ Host bb
 ```
 
 
-## Deployment & Hooks
+## Configuration & Hooks
+
+### config.xml
+```
+#!xml
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <deploy>
+        <!-- Base directory to search for projects. Required. -->
+        <directory>/var/www</directory>
+    </deploy>
+</config>
+```
 
 ### deploy.xml
 ```
@@ -70,4 +82,19 @@ function afterDeploy (Deployer $deployer)
     // do something...
     return true;
 }
+```
+
+
+## Deployment
+
+### CLI input to select project and branch:
+
+```
+$ php -f deploy.php 
+```
+
+### Deploy a pre-specified project:
+
+```
+$ php -f deploy.php -- --project "my.project.com" [--branch "dev"]
 ```
