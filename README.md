@@ -2,7 +2,27 @@
 
 PHP script for the deployment of Git projects.
 
-## Setup
+## Directory & Repository Setup
+Required directory setup:
+```
+www_dir
+|
+--- deploy  # this repo
+|   |-- config.xml
+|   |-- ...
+|
+--- my.project.com
+    |-- builds
+    |-- current  # symlink to current build directory
+    |-- repo  # git clone of project being deployed
+    |-- shared  # shared resources for each build (logs, sessions, var, media, etc)
+    |-- deploy.xml
+    |-- hooks.php
+--- my.second.com
+    |-- ...
+```
+
+## SSH Setup
 
 * Edit `{repo_root}/example/config.xml` and save as `{repo_root}/config.xml`.
 * Edit `{repo_root}/example/deploy.xml` and save it in the project directory as `deploy.xml`.
