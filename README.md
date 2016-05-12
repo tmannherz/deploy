@@ -7,32 +7,32 @@ PHP script for the deployment of Git projects.
 * Edit `{repo_root}/example/config.xml` and save as `{repo_root}/config.xml`.
 * Edit `{repo_root}/example/deploy.xml` and save it in the project directory as `deploy.xml`.
 * Edit `{repo}/.git/config` and change the URL to use SSH: 
-```
- -url = https://bitbucket.org/{user}/{repo}.git
- +url = git@bitbucket.org:{user}/{repo}.git
-```
+
+    ```
+     -url = https://github.com/{user}/{repo}.git
+     +url = git@github.com:{user}/{repo}.git
+    ```
 * Generate SSH keys:
-```
-$ ssh-keygen -t rsa -C "{label}"
-$ eval `ssh-agent -s`
-$ ssh-add
-```
-* Add public key to BitBucket and run `ssh-add ~/.ssh/{key}_id_rsa` to register the private key.
-* Setup server private key to automatically authenticate with BitBucket. In `~/.ssh/config`, add:
 
-```
-Host bb
-        Hostname bitbucket.org
-        User {user}
-        IdentityFile ~/.ssh/{key}_id_rsa
-```
+    ```
+    $ ssh-keygen -t rsa -C "{label}"
+    $ eval `ssh-agent -s`
+    $ ssh-add
+    ```
+* Add public key to GitHub and run `ssh-add ~/.ssh/{key}_id_rsa` to register the private key.
+* Setup server private key to automatically authenticate with GitHub. In `~/.ssh/config`, add:
 
+    ```
+    Host bb
+            Hostname github.com
+            User {user}
+            IdentityFile ~/.ssh/{key}_id_rsa
+    ```
 
 ## Configuration & Hooks
 
-### config.xml
-```
-#!xml
+##### config.xml
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <deploy>
@@ -42,9 +42,8 @@ Host bb
 </config>
 ```
 
-### deploy.xml
-```
-#!xml
+##### deploy.xml
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <project id="my.project.com">
@@ -67,9 +66,8 @@ Host bb
 </config>
 ```
 
-### afterDeploy.php
-```
-#!php
+##### afterDeploy.php
+```php
 <?php
 use Deploy\Deployer;
 
@@ -87,13 +85,13 @@ function afterDeploy (Deployer $deployer)
 
 ## Deployment
 
-### CLI input to select project and branch:
+##### CLI input to select project and branch:
 
 ```
 $ php -f deploy.php 
 ```
 
-### Deploy a pre-specified project:
+##### Deploy a pre-specified project:
 
 ```
 $ php -f deploy.php -- --project "my.project.com" [--branch "dev"]
