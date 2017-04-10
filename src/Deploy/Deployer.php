@@ -211,7 +211,7 @@ class Deployer
 
         // point current to the build
         @unlink($this->current);
-        if (!@symlink($this->build, $this->current)) {
+        if (!$this->symlink($this->build, $this->current)) {
             throw new Exception('Error linking to the current directory.');
         }
 
@@ -287,5 +287,30 @@ class Deployer
     public function getSharedPath ()
     {
         return $this->shared;
+    }
+
+    /**
+     * Execute a system command.
+     *
+     * @param string $command
+     * @return bool
+     */
+    public function exec ($command)
+    {
+        $output = [];
+        exec($command, $output, $res);
+        return $res === 0 ? true : false;
+    }
+
+    /**
+     * Create a symlink.
+     *
+     * @param string $from
+     * @param string $to
+     * @return bool
+     */
+    public function symlink ($from, $to)
+    {
+        return @symlink($from, $to);
     }
 }

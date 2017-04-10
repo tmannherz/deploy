@@ -34,7 +34,7 @@ class Manager
     /**
      * Allowed custom project type defaults.
      *
-     * @var string
+     * @var string[]
      */
     protected $allowedTypes = [
         'zend' => 'Deploy\Project\ZendFramework',
@@ -62,7 +62,7 @@ class Manager
             $type = isset($xml->project->type) ? (string)$xml->project->type : false;
             $defaultBranch = isset($xml->project->default_branch) ? (string)$xml->project->default_branch : false;
             $environment = isset($xml->project->environment) ? (string)$xml->project->environment : false;
-            $useComposer = isset($xml->project->use_composer) ? true : false;
+            $useComposer = isset($xml->project->use_composer) ? (bool)(string)$xml->project->use_composer : false;
             $hooks = isset($xml->project->hooks) ? $xml->project->hooks : null;
             if (isset($xml->project->perms->directory)) {
                 $perms['directory'] = (string)$xml->project->perms->directory;
