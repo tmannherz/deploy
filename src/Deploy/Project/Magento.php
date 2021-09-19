@@ -47,6 +47,9 @@ class Magento extends Project
         }
         $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
         if ($res) {
+            if (file_exists($deployer->getBuildPath() . '/var')) {
+                @rrmdir($deployer->getBuildPath() . '/var');
+            }
             $res = @symlink($deployer->getSharedPath() . '/var', $deployer->getBuildPath() . '/var');
         }
 
