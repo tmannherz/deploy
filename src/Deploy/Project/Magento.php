@@ -42,6 +42,9 @@ class Magento extends Project
             @rename($deployer->getBuildPath() . '/maintenance.flag.disabled', $deployer->getBuildPath() . '/maintenance.flag');
         }
 
+        if (file_exists($deployer->getBuildPath() . '/media')) {
+            @rrmdir($deployer->getBuildPath() . '/media');
+        }
         $res = @symlink($deployer->getSharedPath() . '/media', $deployer->getBuildPath() . '/media');
         if ($res) {
             $res = @symlink($deployer->getSharedPath() . '/var', $deployer->getBuildPath() . '/var');

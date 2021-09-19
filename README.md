@@ -34,10 +34,10 @@ www_dir
     ```
 * Generate SSH keys:
 
-    ```
-    $ ssh-keygen -t rsa -C "{label}"
-    $ eval `ssh-agent -s`
-    $ ssh-add
+    ```shell
+    ssh-keygen -t rsa -C "{label}"
+    eval `ssh-agent -s`
+    ssh-add
     ```
 * Add public key to GitHub and run `ssh-add ~/.ssh/{key}_id_rsa` to register the private key.
 * Setup server private key to automatically authenticate with GitHub. In `~/.ssh/config`, add:
@@ -107,12 +107,12 @@ function afterDeploy (Deployer $deployer)
 
 ##### CLI input to select project and branch:
 
-```
-$ php -f deploy.php 
+```shell
+php -f deploy.php 
 ```
 
 ##### Deploy a pre-specified project:
 
-```
-$ php -f deploy.php -- --project "my.project.com" [--branch "dev"]
+```shell
+php -f deploy.php -- --project "my.project.com" [--branch "dev"]
 ```
