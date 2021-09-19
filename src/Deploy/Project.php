@@ -173,7 +173,7 @@ class Project
     protected function callHook (Deployer $deployer, $hookName)
     {
         if (isset($this->hooks->$hookName) && isset($this->hooks->$hookName->include)) {
-            include $deployer->getProjectPath() . '/' . (string)$this->hooks->$hookName->include;
+            include_once $deployer->getProjectPath() . '/' . (string)$this->hooks->$hookName->include;
             if (isset($this->hooks->$hookName->call)) {
                 if (call_user_func((string)$this->hooks->$hookName->call, $deployer)) {
                     $deployer->addStep($hookName . ' hook completed.');
