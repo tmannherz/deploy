@@ -112,7 +112,6 @@ class Magento extends Project
         $this->clearCache($deployer);
 
         if (file_exists($deployer->getBuildPath() . '/maintenance.flag')) {
-            $this->exec('chmod 774 ' . $deployer->getBuildPath() . '/maintenance.flag');
             @rename($deployer->getBuildPath() . '/maintenance.flag', $deployer->getBuildPath() . '/maintenance.flag.disabled');
         }
 

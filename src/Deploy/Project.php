@@ -93,7 +93,7 @@ class Project
         }
 
         $res = $this->exec(sprintf(
-            'find %1$s -type d -exec chmod %2$s {} \; && find %1$s -type f -exec chmod %3$s {} \;',
+            'find %1$s -type d -exec chmod %2$s {} \; && find %1$s -type f -exec chmod %3$s {} \; && chmod 770 %1$s',
             $path,
             $directoryPerms,
             $filePerms
