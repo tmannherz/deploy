@@ -73,6 +73,9 @@ class Manager
             if (isset($xml->project->perms->owner)) {
                 $perms['owner'] = (string)$xml->project->perms->owner;
             }
+            if (isset($xml->project->perms->group)) {
+                $perms['group'] = (string)$xml->project->perms->group;
+            }
         }
         if ($type && array_key_exists($type, $this->allowedTypes)) {
             $projectClass = $this->allowedTypes[$type];

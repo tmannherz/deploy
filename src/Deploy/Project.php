@@ -99,12 +99,21 @@ class Project
             $filePerms
         ));
 
-        if ($res && $this->getPermsOwner()) {
-            $res = $this->exec(sprintf(
-                'chown -R %s %s',
-                $this->getPermsOwner(),
-                $path
-            ));
+        if ($res) {
+            if ($this->getPermsOwner()) {
+                $res = $this->exec(sprintf(
+                    'chown -R %s %s',
+                    $this->getPermsOwner(),
+                    $path
+                ));
+            }
+            elseif ($this->getPermsGroup()) {
+                $res = $this->exec(sprintf(
+                    'chgrp -R %s %s',
+                    $this->getPermsGroup(),
+                    $path
+                ));
+            }
         }
         return $res;
     }
@@ -194,15 +203,17 @@ class Project
      * @param string|array $directory
      * @param string $file
      * @param string $owner
+     * @param string $group
      * @return $this
      */
-    public function setPerms ($directory, $file = null, $owner = null)
+    public function setPerms ($directory, $file = null, $owner = null, $group = null)
     {
         if (is_array($directory)) {
             return $this->setPerms(
                 $directory['directory'] ?? null,
                 $directory['file'] ?? null,
-                $directory['owner'] ?? null
+                $directory['owner'] ?? null,
+                $directory['group'] ?? null
             );
         }
         if ($directory) {
@@ -217,6 +228,9 @@ class Project
         if ($owner) {
             $this->perms['owner'] = $owner;
         }
+        if ($group) {
+            $this->perms['group'] = $group;
+        }
         return $this;
     }
 
@@ -226,6 +240,14 @@ class Project
     public function getPermsOwner ()
     {
         return $this->perms['owner'] ?? false;
+    }
+
+    /**
+     * @return bool|string
+     */
+    public function getPermsGroup ()
+    {
+        return $this->perms['group'] ?? false;
     }
 
     /**
