@@ -111,16 +111,17 @@ try {
     echo implode("\n", $steps);
     if (is_string($result)) {
         echo "\nDeployment failed.\n";
-        echo $result;
+        echo $result . "\n";
+        exit(1);
     }
     else if ($result === true) {
-        echo "\nProject successfully deployed.";
+        echo "\nProject successfully deployed.\n";
+        exit(0);
     }
     else {
-        echo "\nDeployment failed.";
+        echo "\nDeployment failed.\n";
+        exit(1);
     }
-    echo "\n";
-    exit(0);
 } catch (\Exception $e) {
     echo $e->getMessage() . "\n";
     echo $e->getTraceAsString() . "\n";
