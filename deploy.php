@@ -18,18 +18,18 @@ echo "#############################\n\n";
 $xmlFile = __DIR__ . '/config.xml';
 if (!file_exists($xmlFile)) {
     echo "Config XML not found. Please see config.xml.sample.\n";
-    exit;
+    exit(1);
 }
 $xml = @simplexml_load_file($xmlFile);
 if (!$xml) {
     echo "Unable to read config.xml.\n";
-    exit;
+    exit(1);
 }
 
 $wwwDir = (string)$xml->deploy->directory;
 if (!$wwwDir) {
     echo "Project base directory not defined. Please see config.xml.sample.\n";
-    exit;
+    exit(1);
 }
 
 $projects = [];
@@ -54,7 +54,7 @@ if ($projectArg) {
     }
     if (!$project) {
         echo "Requested project does not exist.\n";
-        exit;
+        exit(1);
     }
 }
 else {
@@ -76,7 +76,7 @@ else {
     }
     else {
         echo "No projects suitable for deployment.\n";
-        exit;
+        exit(1);
     }
     echo 'Specify branch to deploy ' . $project . ' (leave blank to use default): ';
     $branch = trim(fgets(STDIN));
@@ -88,7 +88,7 @@ if (!$projectArg) {
     $continue = strtolower(trim(fgets(STDIN)));
     if ($continue != 'y' && $continue != 'yes') {
         echo "Aborting...\n";
-        exit;
+        exit(0);
     }
 }
 
@@ -119,10 +119,11 @@ try {
     else {
         echo "\nDeployment failed.";
     }
+    echo "\n";
+    exit(0);
 } catch (\Exception $e) {
     echo $e->getMessage() . "\n";
     echo $e->getTraceAsString() . "\n";
-    echo "\nDeployment failed.";
+    echo "\nDeployment failed.\n";
+    exit(1)
 }
-
-echo "\n";
