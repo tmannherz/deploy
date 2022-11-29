@@ -125,5 +125,5 @@ try {
     echo $e->getMessage() . "\n";
     echo $e->getTraceAsString() . "\n";
     echo "\nDeployment failed.\n";
-    exit(1)
+    exit(1);
 }
