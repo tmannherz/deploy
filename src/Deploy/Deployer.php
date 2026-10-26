@@ -181,33 +181,8 @@ class Deployer
             $this->steps[$index] .= 'Done';
         }
 
-        // project-specific pre
-        $step = 'Running project pre-deployment commands...';
-        try {
-            if ($this->project->beforeDeploy($this)) {
-                $this->steps[] = $step . 'Done';
-            }
-            else {
-                $this->steps[] = $step . 'Error';
-            }
-        } catch (Exception $e) {
-            $this->steps[] = $step . 'Error';
-            throw $e;
-        }
-
-        // update file permissions
-        $step = 'Updating file permissions...';
-        try {
-            if ($this->project->setFilePermissions($this)) {
-                $this->steps[] = $step . 'Done';
-            }
-            else {
-                $this->steps[] = $step . 'Error';
-            }
-        } catch (Exception $e) {
-            $this->steps[] = $step . 'Error';
-            throw $e;
-        }
+        $this->runProjectStep('Running project pre-deployment commands...', [$this->project, 'beforeDeploy']);
+        $this->runProjectStep('Updating file permissions...', [$this->project, 'setFilePermissions']);
 
         // point current to the build
         @unlink($this->current);
@@ -215,21 +190,31 @@ class Deployer
             throw new Exception('Error linking to the current directory.');
         }
 
-        // project-specific post
-        $step = 'Running project post-deployment commands...';
+        $this->runProjectStep('Running project post-deployment commands...', [$this->project, 'afterDeploy']);
+
+        return true;
+    }
+
+    /**
+     * Run a project step, failing the deployment if it fails.
+     *
+     * @param string $step
+     * @param callable $callback
+     * @throws Exception
+     */
+    protected function runProjectStep ($step, callable $callback)
+    {
         try {
-            if ($this->project->afterDeploy($this)) {
-                $this->steps[] = $step . 'Done';
-            }
-            else {
-                $this->steps[] = $step . 'Error';
-            }
+            $result = $callback($this);
         } catch (Exception $e) {
             $this->steps[] = $step . 'Error';
             throw $e;
         }
-
-        return true;
+        if (!$result) {
+            $this->steps[] = $step . 'Error';
+            throw new Exception(rtrim($step, '.') . ' failed.');
+        }
+        $this->steps[] = $step . 'Done';
     }
 
     /**
